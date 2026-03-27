@@ -1,6 +1,11 @@
 import os
 # Use Ollama library to interact with model:
+import ollama
 from ollama import chat, ChatResponse, Client
+
+import subprocess
+
+process = subprocess.Popen(['ollama', 'serve'])
 
 # Get OLLAMA_HOST, if specified, or default to localhost:11434.
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
@@ -27,7 +32,7 @@ def get_language(post: str) -> str:
 
 # TODO: Implement Basic LLM integration
 def get_translation(post: str) -> str:
-    context = "You are a language translator. Detect the language of the following text and reply only with the English translation of the text:"
+    context = "You are a language translator. Detect the language of the following text and reply only with the English translation of the text. If you cannot detect a language, just return the input as is: "
     # ---------------- YOUR CODE HERE ---------------- #
     # Make a request to your Ollama model, running on your Colab server
     response = client.chat(
@@ -42,7 +47,7 @@ def get_translation(post: str) -> str:
 
     return response.message.content
 
-def translate(content: str) -> tuple[bool, str]:
+def translate_content(content: str) -> tuple[bool, str]:
     lang = get_language(content)
     translation = get_translation(content)
 
