@@ -1,34 +1,55 @@
-def translate_content(content: str) -> tuple[bool, str]:
-    if content == "这是一条中文消息":
-        return False, "This is a Chinese message"
-    if content == "Ceci est un message en français":
-        return False, "This is a French message"
-    if content == "Esta es un mensaje en español":
-        return False, "This is a Spanish message"
-    if content == "Esta é uma mensagem em português":
-        return False, "This is a Portuguese message"
-    if content  == "これは日本語のメッセージです":
-        return False, "This is a Japanese message"
-    if content == "이것은 한국어 메시지입니다":
-        return False, "This is a Korean message"
-    if content == "Dies ist eine Nachricht auf Deutsch":
-        return False, "This is a German message"
-    if content == "Questo è un messaggio in italiano":
-        return False, "This is an Italian message"
-    if content == "Это сообщение на русском":
-        return False, "This is a Russian message"
-    if content == "هذه رسالة باللغة العربية":
-        return False, "This is an Arabic message"
-    if content == "यह हिंदी में संदेश है":
-        return False, "This is a Hindi message"
-    if content == "นี่คือข้อความภาษาไทย":
-        return False, "This is a Thai message"
-    if content == "Bu bir Türkçe mesajdır":
-        return False, "This is a Turkish message"
-    if content == "Đây là một tin nhắn bằng tiếng Việt":
-        return False, "This is a Vietnamese message"
-    if content == "Esto es un mensaje en catalán":
-        return False, "This is a Catalan message"
-    if content == "This is an English message":
-        return True, "This is an English message"
-    return True, content
+import os
+# Use Ollama library to interact with model:
+from ollama import chat, ChatResponse, Client
+
+# Get OLLAMA_HOST, if specified, or default to localhost:11434.
+OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
+
+# Initialize the OpenAI client
+client = Client(host=OLLAMA_URL)
+
+MODEL_NAME = "llama3.1:8b"
+
+def get_language(post: str) -> str:
+    context = "You are a language classifier. Detect the language of the following text and reply only with the English name of the language:  "# TODO: Insert context
+    # ---------------- YOUR CODE HERE ---------------- #
+    response = client.chat(
+        model=MODEL_NAME,  # model name
+        messages=[
+            {
+                "role": "user",
+                "content": context + post
+            }
+        ]
+    )
+
+    return response.message.content
+
+# TODO: Implement Basic LLM integration
+def get_translation(post: str) -> str:
+    context = "You are a language translator. Detect the language of the following text and reply only with the English translation of the text:"
+    # ---------------- YOUR CODE HERE ---------------- #
+    # Make a request to your Ollama model, running on your Colab server
+    response = client.chat(
+        model=MODEL_NAME,  # model name
+        messages=[
+            {
+                "role": "user",
+                "content": context + post
+            }
+        ]
+    )
+
+    return response.message.content
+
+def translate(content: str) -> tuple[bool, str]:
+    lang = get_language(content)
+    translation = get_translation(content)
+
+    # This checks if the translation does not ONLY contain the translation, but also additional LLM text
+    if ":'" in translation:
+        translation = content
+
+    if lang.lower() == "english":
+        return (True, translation)
+    return (False, translation)
