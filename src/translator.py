@@ -3,10 +3,6 @@ import os
 import ollama
 from ollama import chat, ChatResponse, Client
 
-import subprocess
-
-process = subprocess.Popen(['ollama', 'serve'])
-
 # Get OLLAMA_HOST, if specified, or default to localhost:11434.
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 
@@ -48,13 +44,18 @@ def get_translation(post: str) -> str:
     return response.message.content
 
 def translate_content(content: str) -> tuple[bool, str]:
+    # Detect language first
     lang = get_language(content)
+    
+    # Only translate if not English
+    if lang.lower() == "english":
+        return (True, content)
+    
+    # Translate if non-English
     translation = get_translation(content)
-
+    
     # This checks if the translation does not ONLY contain the translation, but also additional LLM text
     if ":'" in translation:
         translation = content
 
-    if lang.lower() == "english":
-        return (True, translation)
     return (False, translation)
