@@ -2,6 +2,7 @@ import os
 # Use Ollama library to interact with model:
 import ollama
 from ollama import chat, ChatResponse, Client
+from langdetect import detect
 
 # Get OLLAMA_HOST, if specified, or default to localhost:11434.
 OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
@@ -11,40 +12,63 @@ client = Client(host=OLLAMA_URL)
 
 MODEL_NAME = "llama3.1:8b"
 
+# Mapping from language codes to English names for common languages
+LANG_CODE_TO_NAME = {
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'ar': 'Arabic',
+    'hi': 'Hindi',
+}
+
 def get_language(post: str) -> str:
-    context = "You are a language classifier. Detect the language of the following text and reply only with the English name of the language:  "# TODO: Insert context
-    # ---------------- YOUR CODE HERE ---------------- #
+    try:
+        code = detect(post)
+        lang = LANG_CODE_TO_NAME.get(code)
+        if lang:
+            return lang
+        else:
+            # Unknown code, fallback to LLM
+            return get_language_llm(post)
+    except:
+        # Detection failed, fallback to LLM
+        return get_language_llm(post)
+
+def get_language_llm(post: str) -> str:
     response = client.chat(
-        model=MODEL_NAME,  # model name
+        model=MODEL_NAME,
         messages=[
             {
                 "role": "user",
-                "content": context + post
+                "content": f"Detect the language of this text and reply with the English name only: {post}"
             }
-        ]
+        ],
+        options={"temperature": 0.0, "num_predict": 10}  # Minimize randomness and limit output length
     )
-
     return response.message.content
 
-# TODO: Implement Basic LLM integration
 def get_translation(post: str) -> str:
-    context = "You are a language translator. Detect the language of the following text and reply only with the English translation of the text. If you cannot detect a language, just return the input as is: "
-    # ---------------- YOUR CODE HERE ---------------- #
-    # Make a request to your Ollama model, running on your Colab server
     response = client.chat(
-        model=MODEL_NAME,  # model name
+        model=MODEL_NAME,
         messages=[
             {
                 "role": "user",
-                "content": context + post
+                "content": f"Translate this text to English. If it's already English or untranslatable, return as is: {post}"
             }
-        ]
+        ],
+        options={"temperature": 0.0}  # Deterministic responses
     )
-
     return response.message.content
 
 def translate_content(content: str) -> tuple[bool, str]:
-    # Detect language first
+    # Detect language first using fast library
     lang = get_language(content)
     
     # Only translate if not English
