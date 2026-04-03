@@ -10,7 +10,7 @@ OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
 # Initialize the OpenAI client
 client = Client(host=OLLAMA_URL)
 
-MODEL_NAME = "llama3.1:8b"
+MODEL_NAME = "llama3.2"  # Smallest Llama model for maximum speed
 
 # Mapping from language codes to English names for common languages
 LANG_CODE_TO_NAME = {
@@ -54,13 +54,13 @@ def get_language_llm(post: str) -> str:
     )
     return response.message.content
 
-def get_translation(post: str) -> str:
+def get_translation(post: str, lang: str) -> str:
     response = client.chat(
         model=MODEL_NAME,
         messages=[
             {
                 "role": "user",
-                "content": f"Translate this text to English. If it's already English or untranslatable, return as is: {post}"
+                "content": f"Translate this {lang if lang else 'given'} text to English. If it's gibberish, return just the post: {post}"
             }
         ],
         options={"temperature": 0.0}  # Deterministic responses
@@ -76,10 +76,6 @@ def translate_content(content: str) -> tuple[bool, str]:
         return (True, content)
     
     # Translate if non-English
-    translation = get_translation(content)
-    
-    # This checks if the translation does not ONLY contain the translation, but also additional LLM text
-    if ":'" in translation:
-        translation = content
+    translation = get_translation(content, lang)
 
     return (False, translation)
