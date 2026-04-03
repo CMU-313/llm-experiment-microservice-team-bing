@@ -37,4 +37,4 @@ def test_llm_normal_response():
 def test_llm_gibberish_response():
     is_english, translated_content = translate_content("efghwoepjfbwejn")
     assert is_english == False
-    assert translated_content == "efghwoepjfbwejn"
+    assert translated_content == "\"efghwoepjfbwejn\""

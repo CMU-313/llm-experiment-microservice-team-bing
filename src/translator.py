@@ -60,7 +60,7 @@ def get_translation(post: str, lang: str) -> str:
         messages=[
             {
                 "role": "user",
-                "content": f"Translate this {lang if lang else 'given'} text to English. If it's gibberish, return just the post: {post}"
+                "content": f"Translate this {lang if lang else 'given'} text to English. If it's gibberish, return just the post: \"{post}\""
             }
         ],
         options={"temperature": 0.0}  # Deterministic responses
