@@ -1,34 +1,81 @@
+import os
+# Use Ollama library to interact with model:
+import ollama
+from ollama import chat, ChatResponse, Client
+from langdetect import detect
+
+# Get OLLAMA_HOST, if specified, or default to localhost:11434.
+OLLAMA_URL = os.getenv("OLLAMA_HOST", "localhost:11434")
+
+# Initialize the OpenAI client
+client = Client(host=OLLAMA_URL)
+
+MODEL_NAME = "llama3.2"  # Smallest Llama model for maximum speed
+
+# Mapping from language codes to English names for common languages
+LANG_CODE_TO_NAME = {
+    'en': 'English',
+    'es': 'Spanish',
+    'fr': 'French',
+    'de': 'German',
+    'zh': 'Chinese',
+    'ja': 'Japanese',
+    'ko': 'Korean',
+    'it': 'Italian',
+    'pt': 'Portuguese',
+    'ru': 'Russian',
+    'ar': 'Arabic',
+    'hi': 'Hindi',
+}
+
+def get_language(post: str) -> str:
+    try:
+        code = detect(post)
+        lang = LANG_CODE_TO_NAME.get(code)
+        if lang:
+            return lang
+        else:
+            # Unknown code, fallback to LLM
+            return get_language_llm(post)
+    except:
+        # Detection failed, fallback to LLM
+        return get_language_llm(post)
+
+def get_language_llm(post: str) -> str:
+    response = client.chat(
+        model=MODEL_NAME,
+        messages=[
+            {
+                "role": "user",
+                "content": f"Detect the language of this text and reply with the English name only: {post}"
+            }
+        ],
+        options={"temperature": 0.0, "num_predict": 10}  # Minimize randomness and limit output length
+    )
+    return response.message.content
+
+def get_translation(post: str, lang: str) -> str:
+    response = client.chat(
+        model=MODEL_NAME,
+        messages=[
+            {
+                "role": "user",
+                "content": f"Translate this {lang if lang else 'given'} text to English. If it's gibberish, return just the post: \"{post}\""
+            }
+        ],
+        options={"temperature": 0.0}  # Deterministic responses
+    )
+    return response.message.content
+
 def translate_content(content: str) -> tuple[bool, str]:
-    if content == "这是一条中文消息":
-        return False, "This is a Chinese message"
-    if content == "Ceci est un message en français":
-        return False, "This is a French message"
-    if content == "Esta es un mensaje en español":
-        return False, "This is a Spanish message"
-    if content == "Esta é uma mensagem em português":
-        return False, "This is a Portuguese message"
-    if content  == "これは日本語のメッセージです":
-        return False, "This is a Japanese message"
-    if content == "이것은 한국어 메시지입니다":
-        return False, "This is a Korean message"
-    if content == "Dies ist eine Nachricht auf Deutsch":
-        return False, "This is a German message"
-    if content == "Questo è un messaggio in italiano":
-        return False, "This is an Italian message"
-    if content == "Это сообщение на русском":
-        return False, "This is a Russian message"
-    if content == "هذه رسالة باللغة العربية":
-        return False, "This is an Arabic message"
-    if content == "यह हिंदी में संदेश है":
-        return False, "This is a Hindi message"
-    if content == "นี่คือข้อความภาษาไทย":
-        return False, "This is a Thai message"
-    if content == "Bu bir Türkçe mesajdır":
-        return False, "This is a Turkish message"
-    if content == "Đây là một tin nhắn bằng tiếng Việt":
-        return False, "This is a Vietnamese message"
-    if content == "Esto es un mensaje en catalán":
-        return False, "This is a Catalan message"
-    if content == "This is an English message":
-        return True, "This is an English message"
-    return True, content
+    # Detect language first using fast library
+    lang = get_language(content)
+    
+    # Only translate if not English
+    if lang.lower() == "english":
+        return (True, content)
+    
+    # Translate if non-English
+    translation = get_translation(content, lang)
+
+    return (False, translation)
